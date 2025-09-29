@@ -528,59 +528,6 @@
         }
 
         /* 装备提示框样式 */
-        .tooltip {
-            position: relative;
-            cursor: help;
-        }
-
-        .tooltip::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            margin-bottom: 5px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            font-size: 0.8rem;
-            line-height: 1.4;
-            border-radius: 6px;
-            white-space: normal;
-            width: 360px;
-            /* 大约60个字符的宽度 */
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            z-index: 1000;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .tooltip:hover::after {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .tooltip::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 5px solid transparent;
-            border-top-color: rgba(0, 0, 0, 0.9);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            z-index: 1000;
-        }
-
-        .tooltip:hover::before {
-            opacity: 1;
-            visibility: visible;
-        }
-
         /* 解决手机端横向溢出问题 */
         html, body {
             overflow-x: hidden;
@@ -918,7 +865,7 @@
 
             regularItems.forEach(item => {
                 const itemElement = document.createElement('div');
-                itemElement.className = 'item tooltip';
+                itemElement.className = 'item';
                 const itemId = parseInt(item.id);
                 // 检查装备是否被选中
                 if (selectedItems.includes(itemId)) {
@@ -927,8 +874,6 @@
                     updateItemCountDisplay(itemElement);
                 }
                 itemElement.dataset.id = item.id;
-                // 添加装备名称和特性作为tooltip数据
-                itemElement.dataset.tooltip = `名称：${item.name}\n特性：${item.features || '暂无特性信息'}`;
                 itemElement.innerHTML = `
                     <div class="item-icon"></div>
                     <div class="item-name">${item.name}</div>
@@ -1208,7 +1153,6 @@
                     const recipeElement = document.createElement('div');
                     recipeElement.className = 'recipe-item tooltip';
                     // 添加装备特性作为tooltip数据
-                    recipeElement.dataset.tooltip = item.features || '暂无特性信息';
                     recipeElement.setAttribute('data-unique-id', recipeUniqueId);
 
                     // 构建配方HTML
