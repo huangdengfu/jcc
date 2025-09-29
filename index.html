@@ -582,13 +582,30 @@
             visibility: visible;
         }
 
+        /* 解决手机端横向溢出问题 */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
             .content-wrapper {
                 flex-direction: column;
             }
 
             h1 {
                 font-size: 1.5rem;
+            }
+            
+            /* 移除小屏幕上的最小宽度限制，防止溢出 */
+            .left-panel,
+            .right-panel {
+                min-width: unset;
+                max-width: 100%;
             }
         }
     </style>
