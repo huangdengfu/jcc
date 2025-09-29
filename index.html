@@ -82,7 +82,7 @@
 
         .items-container {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 6px;
         }
 
@@ -94,6 +94,7 @@
             cursor: pointer;
             transition: all 0.2s;
             border: 2px solid transparent;
+            position: relative;
         }
 
         .item:hover {
@@ -176,9 +177,7 @@
         }
 
         .item-name {
-            font-size: 0.7rem;
-            color: #e0e0ff;
-            line-height: 1.2;
+            display: none; /* 隐藏装备名称 */
         }
 
         .results-panel {
@@ -528,7 +527,7 @@
             background: #5a5a9a;
         }
 
-        /* 装备特性提示框样式 */
+        /* 装备提示框样式 */
         .tooltip {
             position: relative;
             cursor: help;
@@ -928,8 +927,8 @@
                     updateItemCountDisplay(itemElement);
                 }
                 itemElement.dataset.id = item.id;
-                // 添加装备特性作为tooltip数据
-                itemElement.dataset.tooltip = item.features || '暂无特性信息';
+                // 添加装备名称和特性作为tooltip数据
+                itemElement.dataset.tooltip = `名称：${item.name}\n特性：${item.features || '暂无特性信息'}`;
                 itemElement.innerHTML = `
                     <div class="item-icon"></div>
                     <div class="item-name">${item.name}</div>
