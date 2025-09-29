@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金铲铲装备合成查询工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: #ff8a00;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #a0a0c0;
+        }
+
+        .content-wrapper {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            min-height: 500px;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        .right-panel {
+            flex: 1.5;
+            min-width: 300px;
+            height: 100%;
+        }
+
+        .panel {
+            background: rgba(30, 30, 50, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            height: 100%;
+        }
+
+        .panel h2 {
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #4a4a8a;
+            color: #ff8a00;
+            font-size: 1.2rem;
+        }
+
+        .items-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .item {
+            background: rgba(40, 40, 70, 0.8);
+            border-radius: 5px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .item:hover {
+            transform: translateY(-3px);
+            border-color: #4a4a8a;
+        }
+
+        .item.selected {
+            border-color: #ff8a00;
+            background: rgba(70, 50, 30, 0.8);
+            position: relative;
+        }
+
+        .item-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff8a00;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border: 2px solid #1a1a2e;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .item-icon {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 3px;
+            background: linear-gradient(135deg, #3a3a5a, #2a2a4a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .item-name {
+            font-size: 0.7rem;
+            color: #e0e0ff;
+            line-height: 1.2;
+        }
+
+        .results-panel {
+            background: rgba(30, 30, 50, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-panel h2 {
+            color: #ff8a00;
+            margin-bottom: 10px;
+        }
+
+        .recipe-section {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            flex: 3;
+            background: rgba(35, 35, 65, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(60, 60, 100, 0.5);
+            padding: 12px;
+        }
+
+        .stats-section {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            flex: 1;
+            background: rgba(35, 35, 65, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(60, 60, 100, 0.5);
+            padding: 12px;
+        }
+
+        .recipes-container {
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding-bottom: 5px;
+        }
+
+        .recipe-item {
+            background: rgba(40, 40, 70, 0.8);
+            border-radius: 5px;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60px;
+            transition: all 0.3s ease;
+        }
+
+        .recipe-item.complete {
+            background: rgba(50, 70, 40, 0.8);
+            border: 2px solid #ff8a00;
+            box-shadow: 0 0 15px rgba(255, 138, 0, 0.5);
+            animation: recipePulse 1.5s infinite alternate;
+        }
+
+        @keyframes recipePulse {
+            from {
+                box-shadow: 0 0 15px rgba(255, 138, 0, 0.5);
+            }
+            to {
+                box-shadow: 0 0 25px rgba(255, 138, 0, 0.8);
+            }
+        }
+
+        .recipe-combination {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recipe-item-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #5a5a9a, #4a4a8a);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            font-size: 16px;
+        }
+
+        .recipe-component-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4a4a7a, #3a3a5a);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recipe-component-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 138, 0, 0.5);
+        }
+
+        .recipe-component-icon.highlighted {
+            border: 2px solid #ff8a00;
+            box-shadow: 0 0 20px rgba(255, 138, 0, 0.9),
+                0 0 30px rgba(255, 138, 0, 0.5),
+                inset 0 0 5px rgba(255, 138, 0, 0.3);
+            background-image: inherit;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform: scale(1.05);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                box-shadow: 0 0 20px rgba(255, 138, 0, 0.7),
+                    0 0 30px rgba(255, 138, 0, 0.3),
+                    inset 0 0 5px rgba(255, 138, 0, 0.2);
+            }
+
+            to {
+                box-shadow: 0 0 25px rgba(255, 138, 0, 1),
+                    0 0 40px rgba(255, 138, 0, 0.7),
+                    inset 0 0 8px rgba(255, 138, 0, 0.5);
+            }
+        }
+
+        .remove-btn {
+            background: rgba(200, 50, 50, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            transition: all 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: rgba(230, 60, 60, 0.9);
+            transform: scale(1.1);
+        }
+
+        .recipe-equals,
+        .recipe-plus {
+            color: #ff8a00;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .recipes-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .recipe-header {
+            font-weight: bold;
+            color: #ff8a00;
+            margin-bottom: 8px;
+        }
+
+        .recipe-components {
+            display: flex;
+            gap: 15px;
+        }
+
+        .component {
+            display: flex;
+            align-items: center;
+        }
+
+        .component-icon {
+            width: 25px;
+            height: 25px;
+            background: linear-gradient(135deg, #3a3a5a, #2a2a4a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 5px;
+            font-size: 12px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .component-name {
+            font-size: 0.75rem;
+            color: #e0e0ff;
+        }
+
+        .plus-sign {
+            color: #a0a0c0;
+            margin: 0 5px;
+        }
+
+        /* 保留一个.results-grid样式定义 */
+        .results-grid {
+            overflow-y: auto;
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding-right: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(45, 45, 80, 0.9), rgba(35, 35, 65, 0.9));
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(70, 70, 120, 0.5);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-item:hover {
+            background: linear-gradient(135deg, rgba(55, 55, 90, 0.95), rgba(45, 45, 75, 0.95));
+            transform: translateX(2px) translateY(-1px);
+            border-color: rgba(90, 90, 140, 0.7);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4a4a7a, #3a3a5a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.2);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-name {
+            font-size: 0.9rem;
+            color: #f0f0ff;
+            font-weight: 500;
+            margin-bottom: 3px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .result-count {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ff9a20;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .clear-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #5a5a9a, #4a4a8a);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .clear-btn:hover {
+            background: linear-gradient(135deg, #6a6aa8, #5a5a9a);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .clear-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .instructions {
+            text-align: center;
+            margin-top: 15px;
+            color: #a0a0c0;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #a0a0c0;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(40, 40, 70, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a4a8a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a5a9a;
+        }
+
+        /* 装备特性提示框样式 */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 5px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            border-radius: 6px;
+            white-space: normal;
+            width: 360px;
+            /* 大约60个字符的宽度 */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+        }
+
+        .tooltip:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (max-width: 768px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div id="loading" class="loading">正在加载装备数据...</div>
+
+        <div id="content" style="display: none;">
+            <!-- 使用左右布局 -->
+            <div class="content-wrapper">
+                <div class="left-panel">
+                    <div class="panel">
+                        <h2>常规装备 (<span id="regularCount">0</span>件)</h2>
+                        <div class="items-container" id="regularItems"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div class="results-panel">
+                        <!-- 中间层 - 合成配方区域 -->
+                        <div class="recipe-section">
+                            <h2>所选装备合成配方</h2>
+                            <div class="recipes-container" id="recipesContainer"></div>
+                        </div>
+
+                        <button class="clear-btn" id="clearBtn">清空选择</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="instructions">提示：点击常规装备进行选择，工具会自动计算所需基础装备数量</p>
+    </div>
+
+    <script>
+        // 存储当前装备数据
+        let baseItems = [];
+        let regularItems = [];
+        // 存储选择的装备信息，使用对象数组保存更多信息
+        let selectedItems = [];
+        // 存储用户手动高亮的装备状态，结构：{recipeUniqueId: {componentId: true}}
+        let manuallyHighlightedComponents = new Map();
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function () {
+            // 加载CSV数据
+            loadCSVData();
+
+            // 设置事件监听器
+            document.getElementById('clearBtn').addEventListener('click', function () {
+                clearSelections();
+            });
+        });
+
+        // 从CSV文件加载数据
+        async function loadCSVData() {
+            try {
+                const response = await fetch('equipment.csv');
+                if (!response.ok) {
+                    throw new Error('无法加载equipment.csv文件');
+                }
+
+                const csvText = await response.text();
+                parseCSVData(csvText);
+            } catch (error) {
+                console.error('加载CSV文件失败:', error);
+                document.getElementById('loading').innerHTML =
+                    '加载失败：请确保equipment.csv文件与HTML文件在同一目录下';
+            }
+        }
+
+        // 解析CSV数据
+        function parseCSVData(csvText) {
+            try {
+                const lines = csvText.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 2) {
+                    throw new Error('CSV数据格式不正确！');
+                }
+
+                // 解析CSV头部
+                const headers = lines[0].split(',').map(h => h.trim());
+
+                // 清空现有数据
+                baseItems = [];
+                regularItems = [];
+                selectedItems = [];
+
+                // 解析数据行
+                for (let i = 1; i < lines.length; i++) {
+                    // 处理包含逗号的字段（特别是特性字段）
+                    let line = lines[i];
+                    let values = [];
+                    let inQuotes = false;
+                    let currentValue = '';
+
+                    for (let charIndex = 0; charIndex < line.length; charIndex++) {
+                        const char = line[charIndex];
+
+                        if (char === ',' && !inQuotes) {
+                            values.push(currentValue.trim());
+                            currentValue = '';
+                        } else if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else {
+                            currentValue += char;
+                        }
+                    }
+                    values.push(currentValue.trim());
+
+                    const item = {};
+
+                    for (let j = 0; j < headers.length; j++) {
+                        item[headers[j]] = values[j] || '';
+                    }
+
+                    // 根据类型分类
+                    if (item.type === 'base') {
+                        baseItems.push(item);
+                    } else if (item.type === 'regular') {
+                        // 转换recipe为数组
+                        item.recipe = [parseInt(item.recipe1), parseInt(item.recipe2)];
+                        // 保留特性信息
+                        item.features = item['特性'] || '';
+                        regularItems.push(item);
+                    }
+                }
+
+                // 更新显示
+                updateDisplay();
+
+                // 隐藏加载提示，显示内容
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+                console.log('数据加载成功！');
+            } catch (error) {
+                document.getElementById('loading').innerHTML =
+                    '解析CSV数据时出错：' + error.message;
+            }
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            // 移除基础装备渲染
+            renderRegularItems();
+            updateResults();
+            updateCounts();
+        }
+
+        // 设置图标的背景图片
+        function setItemIcon(element, item) {
+            if (item && item.id) {
+                element.style.backgroundImage = `url('image/${item.id}.webp')`;
+                // 如果图片加载失败，使用备用样式
+                const img = new Image();
+                img.src = `image/${item.id}.webp`;
+                img.onerror = function () {
+                    element.style.backgroundImage = 'none';
+                    // 这里可以设置一些备选的显示方式，比如文字或默认图标
+                    // 为了保持兼容，我们保留原有的文字图标显示
+                };
+            }
+        }
+
+        // 更新计数
+        function updateCounts() {
+            // 移除基础装备计数
+            document.getElementById('regularCount').textContent = regularItems.length;
+        }
+
+        // 渲染基础装备 - 但不再被调用
+        function renderBaseItems() {
+            const container = document.getElementById('baseItems');
+            container.innerHTML = '';
+
+            baseItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'item';
+                itemElement.innerHTML = `
+                    <div class="item-icon"></div>
+                    <div class="item-name">${item.name}</div>
+                `;
+
+                // 设置图标背景图片
+                const iconElement = itemElement.querySelector('.item-icon');
+                setItemIcon(iconElement, item);
+
+                container.appendChild(itemElement);
+            });
+        }
+
+        // 渲染常规装备
+        function renderRegularItems() {
+            const container = document.getElementById('regularItems');
+            container.innerHTML = '';
+
+            regularItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'item tooltip';
+                const itemId = parseInt(item.id);
+                // 检查装备是否被选中
+                if (selectedItems.includes(itemId)) {
+                    itemElement.classList.add('selected');
+                    // 更新装备右上角的数量显示
+                    updateItemCountDisplay(itemElement);
+                }
+                itemElement.dataset.id = item.id;
+                // 添加装备特性作为tooltip数据
+                itemElement.dataset.tooltip = item.features || '暂无特性信息';
+                itemElement.innerHTML = `
+                    <div class="item-icon"></div>
+                    <div class="item-name">${item.name}</div>
+                `;
+
+                // 设置图标背景图片
+                const iconElement = itemElement.querySelector('.item-icon');
+                setItemIcon(iconElement, item);
+
+                // 添加点击事件
+                itemElement.addEventListener('click', function () {
+                    const itemId = parseInt(this.dataset.id);
+                    toggleItemSelection(itemId, this);
+                });
+
+
+
+                container.appendChild(itemElement);
+            });
+        }
+
+        // 加选装备逻辑
+        function toggleItemSelection(itemId, element) {
+            // 创建唯一ID：使用itemId和时间戳组合，确保唯一性
+            const recipeUniqueId = `${itemId}_${Date.now()}`;
+            
+            // 添加到选择列表，保存完整信息对象
+            selectedItems.push({
+                id: itemId,
+                uniqueId: recipeUniqueId
+            });
+
+            // 添加选中状态
+            element.classList.add('selected');
+
+            // 更新装备右上角的数量显示
+            updateItemCountDisplay(element);
+
+            // 更新计算结果
+            updateResults();
+        }
+
+        // 更新装备右上角的数量显示
+        function updateItemCountDisplay(element) {
+            const itemId = parseInt(element.dataset.id);
+            // 计算该装备的选中次数
+            const count = selectedItems.filter(item => item.id === itemId).length;
+
+            // 如果数量大于等于1，显示数量；否则不显示
+            if (count >= 1) {
+                // 查找或创建数量元素
+                let countElement = element.querySelector('.item-count');
+                if (!countElement) {
+                    countElement = document.createElement('span');
+                    countElement.className = 'item-count';
+                    element.appendChild(countElement);
+                }
+                countElement.textContent = count;
+            } else {
+                // 如果数量为1或0，移除数量元素
+                const countElement = element.querySelector('.item-count');
+                if (countElement) {
+                    countElement.remove();
+                }
+            }
+        }
+
+        // 从选择中移除单个装备
+        function removeItemSelection(itemId, index) {
+            // 如果提供了索引，直接使用该索引
+            if (index !== undefined && index >= 0 && index < selectedItems.length) {
+                // 获取要移除的装备对象
+                const itemToRemove = selectedItems[index];
+                // 移除指定索引的装备
+                selectedItems.splice(index, 1);
+                
+                // 清理该配方相关的高亮状态
+                if (itemToRemove && itemToRemove.uniqueId && manuallyHighlightedComponents.has(itemToRemove.uniqueId)) {
+                    manuallyHighlightedComponents.delete(itemToRemove.uniqueId);
+                }
+            } else {
+                // 使用findIndex查找最后一个匹配的装备对象（通过id属性）
+                const lastIndex = selectedItems.findLastIndex(item => item.id === itemId);
+                if (lastIndex !== -1) {
+                    // 移除该装备
+                    const itemToRemove = selectedItems[lastIndex];
+                    selectedItems.splice(lastIndex, 1);
+                    
+                    // 清理该配方相关的高亮状态
+                    if (itemToRemove && itemToRemove.uniqueId && manuallyHighlightedComponents.has(itemToRemove.uniqueId)) {
+                        manuallyHighlightedComponents.delete(itemToRemove.uniqueId);
+                    }
+                } else {
+                    return; // 如果找不到装备，直接返回
+                }
+            }
+
+            const itemElement = document.querySelector(`.item[data-id="${itemId}"]`);
+            if (itemElement) {
+                // 检查该装备是否还有选中的实例
+                const remainingCount = selectedItems.filter(item => item.id === itemId).length;
+                if (remainingCount === 0) {
+                    // 如果没有剩余的，移除选中状态
+                    itemElement.classList.remove('selected');
+                }
+
+                // 更新装备右上角的数量显示
+                updateItemCountDisplay(itemElement);
+            }
+
+            updateResults();
+        }
+
+        // 清空所有选择
+        function clearSelections() {
+            selectedItems = [];
+            manuallyHighlightedComponents.clear();
+            document.querySelectorAll('#regularItems .item').forEach(item => {
+                item.classList.remove('selected');
+                // 移除数量元素
+                const countElement = item.querySelector('.item-count');
+                if (countElement) {
+                    countElement.remove();
+                }
+            });
+            updateResults();
+        }
+
+        // 为配方中的小装备图标添加点击事件监听器
+        function addComponentIconClickListener(element, itemId, recipeUniqueId) {
+            element.addEventListener('click', function () {
+                // 切换高亮状态
+                const isCurrentlyHighlighted = element.classList.toggle('highlighted');
+                
+                // 获取或创建该配方的高亮装备映射
+                if (!manuallyHighlightedComponents.has(recipeUniqueId)) {
+                    manuallyHighlightedComponents.set(recipeUniqueId, new Map());
+                }
+                const recipeHighlights = manuallyHighlightedComponents.get(recipeUniqueId);
+                
+                // 更新手动高亮的装备状态
+                if (isCurrentlyHighlighted) {
+                    recipeHighlights.set(itemId, true);
+                } else {
+                    recipeHighlights.delete(itemId);
+                }
+                
+                // 如果该配方没有任何高亮装备，清理该映射
+                if (recipeHighlights.size === 0) {
+                    manuallyHighlightedComponents.delete(recipeUniqueId);
+                }
+                
+                // 检查当前配方是否完整（两个小装备都被高亮）
+                updateRecipeHighlightStatus(recipeUniqueId);
+            });
+        }
+
+        // 更新配方的高亮状态
+        function updateRecipeHighlightStatus(recipeUniqueId) {
+            // 找到对应的配方元素
+            const recipeElement = findRecipeElementByUniqueId(recipeUniqueId);
+            if (!recipeElement) {
+                console.log('未找到对应的配方元素:', recipeUniqueId);
+                return;
+            }
+            
+            // 获取所有小装备图标
+            const componentIcons = recipeElement.querySelectorAll('.recipe-component-icon');
+            
+            // 检查是否有两个小装备图标
+            if (componentIcons.length === 2) {
+                // 获取该配方的手动高亮装备映射
+                const recipeHighlights = manuallyHighlightedComponents.get(recipeUniqueId) || new Map();
+                
+                // 检查两个小装备是否都被高亮
+                const isComponent1Highlighted = componentIcons[0].classList.contains('highlighted') || 
+                                               recipeHighlights.has(componentIcons[0].dataset.itemId);
+                const isComponent2Highlighted = componentIcons[1].classList.contains('highlighted') || 
+                                               recipeHighlights.has(componentIcons[1].dataset.itemId);
+                
+                // 如果两个小装备都被高亮，添加高亮样式；否则移除
+                if (isComponent1Highlighted && isComponent2Highlighted) {
+                    recipeElement.classList.add('complete');
+                } else {
+                    recipeElement.classList.remove('complete');
+                }
+            } else {
+                // 如果不是两个小装备，移除高亮状态
+                recipeElement.classList.remove('complete');
+            }
+        }
+
+        // 根据唯一ID查找配方元素
+        function findRecipeElementByUniqueId(recipeUniqueId) {
+            // 1. 优先通过配方元素自身的data-unique-id属性查找
+            const recipeElementByUniqueId = document.querySelector(`.recipe-item[data-unique-id="${recipeUniqueId}"]`);
+            if (recipeElementByUniqueId) {
+                return recipeElementByUniqueId;
+            }
+            
+            // 2. 如果上述方法失败，遍历所有配方元素和其中的小装备图标查找
+            const recipeElements = document.querySelectorAll('.recipe-item');
+            for (let i = 0; i < recipeElements.length; i++) {
+                // 直接检查配方元素的data-unique-id属性
+                if (recipeElements[i].getAttribute('data-unique-id') === recipeUniqueId) {
+                    return recipeElements[i];
+                }
+                
+                // 也检查小装备图标的dataset
+                const recipeComponentIcons = recipeElements[i].querySelectorAll('.recipe-component-icon');
+                for (let j = 0; j < recipeComponentIcons.length; j++) {
+                    if (recipeComponentIcons[j].dataset.recipeId === recipeUniqueId) {
+                        return recipeElements[i];
+                    }
+                }
+            }
+            
+            console.log('无法找到配方元素:', recipeUniqueId);
+            return null;
+        }
+
+        // 更新小装备图标的高亮状态
+        function updateComponentIconHighlight(element, itemId, recipeUniqueId) {
+            // 检查该装备是否在selectedItems中
+            const isSelected = selectedItems.some(item => item.id === parseInt(itemId));
+            
+            // 检查该装备是否被用户为当前配方手动高亮
+            let isManuallyHighlighted = false;
+            if (manuallyHighlightedComponents.has(recipeUniqueId)) {
+                const recipeHighlights = manuallyHighlightedComponents.get(recipeUniqueId);
+                isManuallyHighlighted = recipeHighlights.has(itemId);
+            }
+
+            if (isSelected || isManuallyHighlighted) {
+                element.classList.add('highlighted');
+            } else {
+                element.classList.remove('highlighted');
+            }
+        }
+
+        // 更新计算结果
+        function updateResults() {
+            const recipesContainer = document.getElementById('recipesContainer');
+
+            // 清空容器
+            recipesContainer.innerHTML = '';
+
+            // 检查是否有选中的装备
+            const hasSelectedItems = selectedItems.length > 0;
+
+            if (!hasSelectedItems) {
+                recipesContainer.innerHTML = '<p style="text-align: center; color: #a0a0c0;">请选择常规装备</p>';
+                return;
+            }
+
+            // 显示中间层：为每个选中的装备创建单独的配方项
+            // 直接遍历selectedItems数组，保持选择顺序
+            selectedItems.forEach((itemInfo, index) => {
+                const itemId = itemInfo.id;
+                const recipeUniqueId = itemInfo.uniqueId;
+                const item = regularItems.find(i => parseInt(i.id) === itemId);
+                if (item) {
+                    const recipeElement = document.createElement('div');
+                    recipeElement.className = 'recipe-item tooltip';
+                    // 添加装备特性作为tooltip数据
+                    recipeElement.dataset.tooltip = item.features || '暂无特性信息';
+                    recipeElement.setAttribute('data-unique-id', recipeUniqueId);
+
+                    // 构建配方HTML
+                    let recipeHTML = `
+                        <div class="recipe-combination">
+                            <div class="recipe-item-icon"></div>
+                    `;
+
+                    // 检查是否有配方
+                    if (item.recipe && item.recipe.length >= 2) {
+                        // 获取合成配方中的两个基础装备
+                        const component1 = baseItems.find(b => parseInt(b.id) === item.recipe[0]);
+                        const component2 = baseItems.find(b => parseInt(b.id) === item.recipe[1]);
+
+                        if (component1 && component2) {
+                            recipeHTML += `
+                                <span class="recipe-equals">=</span>
+                                <div class="recipe-component-icon"></div>
+                                <span class="recipe-plus">+</span>
+                                <div class="recipe-component-icon"></div>
+                            `;
+                        } else {
+                            recipeHTML += `
+                                <span class="recipe-equals">?</span>
+                            `;
+                        }
+                    } else {
+                        recipeHTML += `
+                            <span class="recipe-equals">?</span>
+                        `;
+                    }
+
+                    recipeHTML += `
+                            <button class="remove-btn" data-item-id="${itemId}" data-index="${index}">×</button>
+                        </div>
+                    `;
+
+                    recipeElement.innerHTML = recipeHTML;
+
+                    // 设置图标背景图片
+                    setItemIcon(recipeElement.querySelector('.recipe-item-icon'), item);
+
+                    // 设置基础装备图标（如果有）
+                    const componentIcons = recipeElement.querySelectorAll('.recipe-component-icon');
+                    if (item.recipe && item.recipe.length >= 2) {
+                        const component1 = baseItems.find(b => parseInt(b.id) === item.recipe[0]);
+                        const component2 = baseItems.find(b => parseInt(b.id) === item.recipe[1]);
+
+                        if (component1 && componentIcons[0]) {
+                            setItemIcon(componentIcons[0], component1);
+                            componentIcons[0].dataset.itemId = component1.id;
+                            componentIcons[0].dataset.recipeId = recipeUniqueId;
+                            addComponentIconClickListener(componentIcons[0], component1.id, recipeUniqueId);
+                            updateComponentIconHighlight(componentIcons[0], component1.id, recipeUniqueId);
+                        }
+                        if (component2 && componentIcons[1]) {
+                            setItemIcon(componentIcons[1], component2);
+                            componentIcons[1].dataset.itemId = component2.id;
+                            componentIcons[1].dataset.recipeId = recipeUniqueId;
+                            addComponentIconClickListener(componentIcons[1], component2.id, recipeUniqueId);
+                            updateComponentIconHighlight(componentIcons[1], component2.id, recipeUniqueId);
+                        }
+                        
+                        // 初始化时检查配方是否应该高亮
+                        setTimeout(() => {
+                            updateRecipeHighlightStatus(recipeUniqueId);
+                        }, 0);
+                    }
+
+                    recipesContainer.appendChild(recipeElement);
+
+                    // 为删除按钮添加事件监听
+                    const removeBtn = recipeElement.querySelector('.remove-btn');
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', function (e) {
+                            e.stopPropagation(); // 阻止冒泡，避免触发配方项的点击事件
+                            const itemIdToRemove = parseInt(this.dataset.itemId);
+                            const itemIndexToRemove = parseInt(this.dataset.index);
+                            removeItemSelection(itemIdToRemove, itemIndexToRemove);
+                        });
+                    }
+                    
+                    // 为配方元素添加数据属性，方便后续查找
+                    recipeElement.dataset.index = index;
+
+                    // 不需要额外的setTimeout更新高亮，因为我们在创建图标时已经设置了正确的高亮状态
+                    // 并且我们使用了recipeUniqueId作为唯一标识，不会因为删除配方而丢失高亮状态
+                }
+            });
+            
+            // 更新所有配方的高亮状态
+            updateAllRecipeHighlights();
+        }
+        
+        // 更新所有配方的高亮状态
+        function updateAllRecipeHighlights() {
+            // 遍历所有recipeUniqueId并更新它们的高亮状态
+            selectedItems.forEach(itemInfo => {
+                updateRecipeHighlightStatus(itemInfo.uniqueId);
+            });
+        }
+    </script>
+</body>
+
+</html>
