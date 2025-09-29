@@ -138,6 +138,41 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
+            color: #e0e0ff;
+            font-weight: bold;
+        }
+
+        /* 图片加载动画 */
+        .item-icon.loading, .recipe-item-icon.loading, .recipe-component-icon.loading {
+            animation: pulse 1.5s ease-in-out infinite;
+            background: linear-gradient(135deg, #4a4a6a, #3a3a5a);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(0.95);
+            }
+        }
+
+        /* 图片加载错误样式 */
+        .item-icon.image-error, .recipe-item-icon.image-error, .recipe-component-icon.image-error {
+            background: linear-gradient(135deg, #6a3a3a, #5a2a2a);
+            border: 1px solid #ff6b6b;
+        }
+
+        /* 确保所有图标类型都有相同的基本样式 */
+        .recipe-item-icon, .recipe-component-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0ff;
+            font-weight: bold;
+            font-size: 12px;
         }
 
         .item-name {
@@ -611,6 +646,32 @@
             });
         });
 
+        // 批量预加载关键图片
+        function preloadCriticalImages() {
+            // 优先预加载基础装备的图片，因为它们在合成配方中更常用
+            const criticalItems = baseItems.slice(0, 10); // 预加载前10个基础装备
+            
+            criticalItems.forEach(item => {
+                if (item && item.id) {
+                    const imageUrl = `image/${item.id}.webp`;
+                    
+                    // 只有不在缓存中且不在加载队列中的图片才进行预加载
+                    if (!imageCache.has(imageUrl) && !imageLoadingQueue.has(imageUrl)) {
+                        const img = new Image();
+                        img.src = imageUrl;
+                        
+                        img.onload = function() {
+                            imageCache.set(imageUrl, 'loaded');
+                        };
+                        
+                        img.onerror = function() {
+                            imageCache.set(imageUrl, 'error');
+                        };
+                    }
+                }
+            });
+        }
+
         // 从CSV文件加载数据
         async function loadCSVData() {
             try {
@@ -691,6 +752,11 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
 
+                // 数据加载完成后预加载关键图片
+                setTimeout(() => {
+                    preloadCriticalImages();
+                }, 100);
+
                 console.log('数据加载成功！');
             } catch (error) {
                 document.getElementById('loading').innerHTML =
@@ -706,19 +772,100 @@
             updateCounts();
         }
 
-        // 设置图标的背景图片
+        // 图片预加载缓存
+        const imageCache = new Map();
+        // 图片加载队列
+        const imageLoadingQueue = new Set();
+        
+        // 设置图标的背景图片 - 优化版
         function setItemIcon(element, item) {
-            if (item && item.id) {
-                element.style.backgroundImage = `url('image/${item.id}.webp')`;
-                // 如果图片加载失败，使用备用样式
-                const img = new Image();
-                img.src = `image/${item.id}.webp`;
-                img.onerror = function () {
-                    element.style.backgroundImage = 'none';
-                    // 这里可以设置一些备选的显示方式，比如文字或默认图标
-                    // 为了保持兼容，我们保留原有的文字图标显示
-                };
+            if (!item || !item.id) return;
+            
+            const imageUrl = `image/${item.id}.webp`;
+            const fallbackText = item.name.charAt(0).toUpperCase(); // 使用装备名称首字母作为备选
+            
+            // 设置加载占位符
+            element.style.backgroundImage = 'none';
+            element.textContent = fallbackText;
+            element.classList.add('loading');
+            
+            // 检查缓存
+            if (imageCache.has(imageUrl)) {
+                const cachedStatus = imageCache.get(imageUrl);
+                if (cachedStatus === 'loaded') {
+                    // 从缓存加载
+                    element.style.backgroundImage = `url('${imageUrl}')`;
+                    element.textContent = '';
+                    element.classList.remove('loading');
+                } else if (cachedStatus === 'error') {
+                    // 从缓存获取错误状态
+                    element.classList.remove('loading');
+                    // 保持占位符文字
+                }
+                return;
             }
+            
+            // 如果已在加载队列中，等待完成
+            if (imageLoadingQueue.has(imageUrl)) {
+                return;
+            }
+            
+            // 添加到加载队列
+            imageLoadingQueue.add(imageUrl);
+            
+            // 使用Image对象预加载
+            const img = new Image();
+            
+            // 设置交叉观察器实现延迟加载
+            if ('IntersectionObserver' in window && element.tagName !== 'DIV') {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            img.src = imageUrl;
+                            observer.unobserve(element);
+                        }
+                    });
+                }, { threshold: 0.1 });
+                
+                observer.observe(element);
+            } else {
+                // 不支持交叉观察器时直接加载
+                img.src = imageUrl;
+            }
+            
+            // 加载成功处理
+            img.onload = function() {
+                imageCache.set(imageUrl, 'loaded');
+                imageLoadingQueue.delete(imageUrl);
+                
+                // 更新元素样式
+                element.style.backgroundImage = `url('${imageUrl}')`;
+                element.textContent = '';
+                element.classList.remove('loading');
+            };
+            
+            // 加载失败处理（含重试逻辑）
+            let retryCount = 0;
+            const maxRetries = 2;
+            
+            img.onerror = function() {
+                retryCount++;
+                
+                if (retryCount <= maxRetries) {
+                    // 延迟重试
+                    setTimeout(() => {
+                        img.src = imageUrl;
+                    }, 500 * retryCount); // 指数退避
+                } else {
+                    // 达到最大重试次数，标记为失败
+                    imageCache.set(imageUrl, 'error');
+                    imageLoadingQueue.delete(imageUrl);
+                    element.classList.remove('loading');
+                    element.classList.add('image-error');
+                    // 保持占位符文字
+                    console.log(`图片加载失败: ${imageUrl}`);
+                }
+            };
         }
 
         // 更新计数
@@ -940,17 +1087,31 @@
                 // 获取该配方的手动高亮装备映射
                 const recipeHighlights = manuallyHighlightedComponents.get(recipeUniqueId) || new Map();
                 
-                // 检查两个小装备是否都被高亮
-                const isComponent1Highlighted = componentIcons[0].classList.contains('highlighted') || 
-                                               recipeHighlights.has(componentIcons[0].dataset.itemId);
-                const isComponent2Highlighted = componentIcons[1].classList.contains('highlighted') || 
-                                               recipeHighlights.has(componentIcons[1].dataset.itemId);
+                // 获取两个小装备的ID
+                const itemId1 = componentIcons[0].dataset.itemId;
+                const itemId2 = componentIcons[1].dataset.itemId;
                 
-                // 如果两个小装备都被高亮，添加高亮样式；否则移除
-                if (isComponent1Highlighted && isComponent2Highlighted) {
-                    recipeElement.classList.add('complete');
+                // 检查两个小装备是否都被高亮
+                // 对于相同ID的小装备，需要确保两个图标都被高亮
+                const isComponent1Highlighted = componentIcons[0].classList.contains('highlighted');
+                const isComponent2Highlighted = componentIcons[1].classList.contains('highlighted');
+                
+                // 如果两个小装备ID相同，需要确保两个图标都被高亮
+                // 如果两个小装备ID不同，则分别检查每个图标的高亮状态
+                if (itemId1 === itemId2) {
+                    // 两个相同ID的小装备，需要两个都被高亮
+                    if (isComponent1Highlighted && isComponent2Highlighted) {
+                        recipeElement.classList.add('complete');
+                    } else {
+                        recipeElement.classList.remove('complete');
+                    }
                 } else {
-                    recipeElement.classList.remove('complete');
+                    // 两个不同ID的小装备，分别检查
+                    if (isComponent1Highlighted && isComponent2Highlighted) {
+                        recipeElement.classList.add('complete');
+                    } else {
+                        recipeElement.classList.remove('complete');
+                    }
                 }
             } else {
                 // 如果不是两个小装备，移除高亮状态
